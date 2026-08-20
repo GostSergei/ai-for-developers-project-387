@@ -1,0 +1,15 @@
+services:
+  app:
+    build: .
+    image: call-calendar:latest
+    container_name: call-calendar
+    environment:
+      PORT: "8000"
+    ports:
+      - "${PORT:-8000}:8000"
+    volumes:
+      - data:/app/backend/data
+    restart: unless-stopped
+
+volumes:
+  data:

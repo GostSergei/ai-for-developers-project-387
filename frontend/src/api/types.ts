@@ -1,0 +1,21 @@
+import type { components } from './schema';
+
+export type EventType = components['schemas']['EventType'];
+export type EventTypeInput = components['schemas']['EventTypeInput'];
+export type Slot = components['schemas']['Slot'];
+export type SlotStatus = components['schemas']['SlotStatus'];
+export type AdminSlot = components['schemas']['AdminSlot'];
+export type AdminDaySlots = components['schemas']['AdminDaySlots'];
+export type Booking = components['schemas']['Booking'];
+export type BookingInfo = components['schemas']['BookingInfo'];
+export type BookingRequest = components['schemas']['BookingRequest'];
+export type BookingsList = components['schemas']['BookingsList'];
+export type DaySlots = components['schemas']['DaySlots'];
+export type AvailabilityRequest = components['schemas']['AvailabilityRequest'];
+export type AvailabilityResponse = components['schemas']['AvailabilityResponse'];
+export type AvailabilityReason = components['schemas']['AvailabilityReason'];
+export type ValidationError = components['schemas']['ValidationError'];
+export type ValidationErrorItem = components['schemas']['ValidationErrorItem'];
+export type NotFoundError = components['schemas']['NotFoundError'];
+export type ConflictError = components['schemas']['ConflictError'];
+export type BadRequestError = components['schemas']['BadRequestError'];
