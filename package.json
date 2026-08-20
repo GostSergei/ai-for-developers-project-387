@@ -1,0 +1,17 @@
+{
+  "name": "call-calendar",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Call Calendar: API contract (TypeSpec) and dev tooling. Frontend lives in ./frontend.",
+  "scripts": {
+    "compile": "tsp compile main.tsp --emit @typespec/openapi3",
+    "compile:types": "npm run compile && npm run api:types --prefix frontend",
+    "mock": "prism mock tsp-output/@typespec/openapi3/openapi.yaml -p 4010"
+  },
+  "devDependencies": {
+    "@stoplight/prism-cli": "^5.13.0",
+    "@typespec/compiler": "^0.62.0",
+    "@typespec/http": "^0.62.0",
+    "@typespec/openapi3": "^0.62.0"
+  }
+}
