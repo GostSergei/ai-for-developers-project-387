@@ -1,0 +1,70 @@
+name: release-please
+
+on:
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: write
+  pull-requests: write
+
+env:
+  RAILWAY_PROJECT_ID: 304300a7-302c-4dd5-b463-07aef974ae6a
+  RAILWAY_SERVICE_ID: 81f68a4e-398b-4ac0-90ef-1efaf5f34147
+  RAILWAY_ENVIRONMENT: production
+
+jobs:
+  release-please:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: googleapis/release-please-action@v5
+        id: release
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          release-type: node
+          package-name: call-calendar
+
+      - name: Checkout code
+        if: steps.release.outputs.release_created == 'true'
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        if: steps.release.outputs.release_created == 'true'
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Install Railway CLI
+        if: steps.release.outputs.release_created == 'true'
+        run: npm i -g @railway/cli
+
+      - name: Deploy to Railway
+        if: steps.release.outputs.release_created == 'true'
+        run: railway up --project "$RAILWAY_PROJECT_ID" --environment "$RAILWAY_ENVIRONMENT" --service "$RAILWAY_SERVICE_ID" -y
+        env:
+          RAILWAY_API_TOKEN: ${{ secrets.RAILWAY_API_TOKEN }}
+
+      - name: Resolve public URL
+        if: steps.release.outputs.release_created == 'true'
+        id: url
+        run: |
+          URL=$(railway domain list --project "$RAILWAY_PROJECT_ID" --environment "$RAILWAY_ENVIRONMENT" --service "$RAILWAY_SERVICE_ID" --json \
+            | jq -r '.domains[0].domain')
+          echo "url=https://${URL}" >> "$GITHUB_OUTPUT"
+        env:
+          RAILWAY_API_TOKEN: ${{ secrets.RAILWAY_API_TOKEN }}
+
+      - name: Verify deployment
+        if: steps.release.outputs.release_created == 'true'
+        run: curl -fsS --max-time 120 "${{ steps.url.outputs.url }}/event-types" >/dev/null
+
+      - name: Add public URL to release notes
+        if: steps.release.outputs.release_created == 'true'
+        run: |
+          BODY=$(gh release view "${{ steps.release.outputs.tag_name }}" --json body -q .body)
+          gh release edit "${{ steps.release.outputs.tag_name }}" --notes "$BODY
+
+          Публичная ссылка: ${{ steps.url.outputs.url }}"
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
