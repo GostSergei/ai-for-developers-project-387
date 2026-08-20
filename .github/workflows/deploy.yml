@@ -1,0 +1,43 @@
+name: Deploy to Railway (manual)
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+env:
+  RAILWAY_PROJECT_ID: 304300a7-302c-4dd5-b463-07aef974ae6a
+  RAILWAY_SERVICE_ID: 81f68a4e-398b-4ac0-90ef-1efaf5f34147
+  RAILWAY_ENVIRONMENT: production
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Install Railway CLI
+        run: npm i -g @railway/cli
+
+      - name: Deploy to Railway
+        run: railway up --project "$RAILWAY_PROJECT_ID" --environment "$RAILWAY_ENVIRONMENT" --service "$RAILWAY_SERVICE_ID" -y
+        env:
+          RAILWAY_API_TOKEN: ${{ secrets.RAILWAY_API_TOKEN }}
+
+      - name: Resolve public URL
+        id: url
+        run: |
+          URL=$(railway domain list --project "$RAILWAY_PROJECT_ID" --environment "$RAILWAY_ENVIRONMENT" --service "$RAILWAY_SERVICE_ID" --json \
+            | jq -r '.domains[0].domain')
+          echo "url=https://${URL}" >> "$GITHUB_OUTPUT"
+        env:
+          RAILWAY_API_TOKEN: ${{ secrets.RAILWAY_API_TOKEN }}
+
+      - name: Verify deployment
+        run: curl -fsS --max-time 120 "${{ steps.url.outputs.url }}/event-types" >/dev/null
