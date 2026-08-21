@@ -22,14 +22,12 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v6
         with:
-          persist-credentials: false
+          persist-credentials: true
 
-      - name: Configure git identity and credentials
+      - name: Configure git identity
         run: |
           git config --local user.name "github-actions[bot]"
           git config --local user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          CRED=$(printf "x-access-token:%s" "${{ github.token }}" | base64)
-          git config --local http.https://github.com/.extraheader "AUTHORIZATION: basic ${CRED}"
 
       - name: Run opencode
         uses: anomalyco/opencode/github@latest
