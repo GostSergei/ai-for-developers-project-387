@@ -53,4 +53,5 @@ Use the venv python for backend, not a global one. Root and `frontend/` each hav
 - UI strings, docs, test descriptions, and commit messages are in **Russian**.
 - Commits MUST follow Conventional Commits (types: `feat|fix|docs|chore|refactor|test|ci|style|perf|build|revert`, lowercase type/scope, header ≤100 chars, no trailing period). Enforced by commitlint and consumed by release-please — a broken format blocks automatic releases.
 - Do not edit or delete `.github/workflows/hexlet-check.yml` (Hexlet grading).
+- **Never push or commit without explicit user approval.** Ask before running `git push` (and generally before `git commit`).
 - Playwright MCP is configured in `.opencode/opencode.json` for browser testing; requires `npx playwright install chromium`.
