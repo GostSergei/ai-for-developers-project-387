@@ -1,6 +1,6 @@
 {
   "name": "call-calendar",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "private": true,
   "description": "Call Calendar: API contract (TypeSpec) and dev tooling. Frontend lives in ./frontend.",
   "scripts": {
