@@ -178,6 +178,11 @@ model EventTypeCreated {
   ...EventType;
 }
 
+@doc("Ответ 204 No Content: тип события удалён.")
+model EventTypeDeleted {
+  @statusCode status: 204;
+}
+
 // ---------- Common endpoints ----------
 
 @route("/event-types")
@@ -227,6 +232,21 @@ namespace Admin {
   op createEventType(
     @body body: EventTypeInput,
   ): EventTypeCreated | ConflictError | ValidationError;
+
+  @route("/admin/event-types/{id}")
+  @patch
+  @doc("Обновить тип события. id задаётся в пути и не изменяется.")
+  op updateEventType(
+    @path id: string,
+    @body body: EventTypeInput,
+  ): EventType | NotFoundError | ValidationError;
+
+  @route("/admin/event-types/{id}")
+  @delete
+  @doc("Удалить тип события. Удаление запрещено, если у типа есть брони (409).")
+  op deleteEventType(
+    @path id: string,
+  ): EventTypeDeleted | NotFoundError | ConflictError;
 
   @route("/admin/{date}")
   @get

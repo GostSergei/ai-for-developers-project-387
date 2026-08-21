@@ -113,6 +113,63 @@ def create_event_type(store: Store, data: EventTypeInput) -> EventType:
     )
 
 
+def validate_event_type_update(data: EventTypeInput) -> list[ValidationErrorItem]:
+    errors = []
+
+    if data.name is None:
+        errors.append(ValidationErrorItem(field="name", message="Field is required"))
+    elif not data.name.strip():
+        errors.append(ValidationErrorItem(field="name", message="Field must not be empty"))
+    elif len(data.name) > 100:
+        errors.append(ValidationErrorItem(field="name", message="Must be at most 100 characters"))
+
+    if data.duration is None:
+        errors.append(ValidationErrorItem(field="duration", message="Field is required"))
+    elif data.duration <= 0:
+        errors.append(ValidationErrorItem(field="duration", message="Must be a positive number"))
+    elif data.duration % GRID_MINUTES != 0:
+        errors.append(
+            ValidationErrorItem(field="duration", message="Must be a multiple of 30")
+        )
+
+    if data.description is not None and len(data.description) > 1000:
+        errors.append(
+            ValidationErrorItem(field="description", message="Must be at most 1000 characters")
+        )
+
+    return errors
+
+
+def update_event_type(store: Store, event_type_id: str, data: EventTypeInput) -> EventType:
+    errors = validate_event_type_update(data)
+    if errors:
+        raise HTTPException(422, {"errors": [e.model_dump() for e in errors]})
+
+    if event_type_id not in store.event_types:
+        raise HTTPException(404, {"error": "Event type not found"})
+
+    return store.update_event_type(
+        EventType(
+            id=event_type_id,
+            name=data.name.strip(),
+            description=data.description,
+            duration=data.duration,
+        )
+    )
+
+
+def delete_event_type(store: Store, event_type_id: str) -> None:
+    if event_type_id not in store.event_types:
+        raise HTTPException(404, {"error": "Event type not found"})
+
+    if any(booking.eventTypeId == event_type_id for booking in store.bookings):
+        raise HTTPException(
+            409, {"error": "Event type has bookings and cannot be deleted"}
+        )
+
+    store.delete_event_type(event_type_id)
+
+
 def get_day_slots(store: Store, d: date, event_type_id: str, now: datetime) -> DaySlots:
     event_type = store.event_type(event_type_id)
     if event_type is None:

@@ -15,6 +15,7 @@ const NOT_FOUND_EVENT_TYPE = 'Event type not found';
 const NOT_FOUND_DATE = 'Date is out of booking window';
 const CONFLICT_BOOKED = 'Slot is already booked';
 const CONFLICT_EVENT_TYPE = 'Event type with this id already exists';
+const CONFLICT_DELETE_EVENT_TYPE = 'Event type has bookings and cannot be deleted';
 
 function json<T>(body: T, status = 200) {
   return HttpResponse.json(body, { status });
