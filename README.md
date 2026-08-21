@@ -118,6 +118,9 @@ npx playwright install chromium
   на основе Conventional Commits, после релиза — деплой на Railway (см. «Деплой»).
 - `.github/workflows/deploy.yml` — ручной деплой на Railway (см. «Деплой»).
 
+Заметки по настройке CI-ботов на базе opencode (известные баги и обходы) —
+[`docs/ci-bots-notes.md`](docs/ci-bots-notes.md).
+
 ## Формат коммитов (Conventional Commits)
 
 Все коммиты (в том числе автоматические, сделанные агентом) следуют
