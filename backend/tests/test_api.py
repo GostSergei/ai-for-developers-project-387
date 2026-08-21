@@ -133,6 +133,92 @@ def test_create_event_type_wrong_type(client):
     assert response.json() == {"error": "Invalid request"}
 
 
+def test_update_event_type(client):
+    create_event_type(client)
+    response = client.patch(
+        "/admin/event-types/consultation",
+        json={"name": "Новая консультация", "duration": 60},
+    )
+    assert response.status_code == 200
+    body = response.json()
+    assert body == {
+        "id": "consultation",
+        "name": "Новая консультация",
+        "duration": 60,
+    }
+
+    listed = client.get("/event-types")
+    assert listed.json()[0]["name"] == "Новая консультация"
+
+
+def test_update_event_type_ignores_id_in_body(client):
+    create_event_type(client)
+    response = client.patch(
+        "/admin/event-types/consultation",
+        json={"id": "ignored", "name": "Игнор id", "duration": 30},
+    )
+    assert response.status_code == 200
+    assert response.json()["id"] == "consultation"
+
+
+def test_update_event_type_not_found(client):
+    response = client.patch(
+        "/admin/event-types/nope", json={"name": "x", "duration": 30}
+    )
+    assert response.status_code == 404
+    assert response.json() == {"error": "Event type not found"}
+
+
+def test_update_event_type_invalid_duration(client):
+    create_event_type(client)
+    response = client.patch(
+        "/admin/event-types/consultation", json={"name": "x", "duration": 15}
+    )
+    assert response.status_code == 422
+    assert has_field(response.json()["errors"], "duration")
+
+
+def test_update_event_type_missing_fields(client):
+    create_event_type(client)
+    response = client.patch("/admin/event-types/consultation", json={})
+    assert response.status_code == 422
+    fields = {item["field"] for item in response.json()["errors"]}
+    assert fields == {"name", "duration"}
+
+
+def test_update_event_type_wrong_type(client):
+    create_event_type(client)
+    response = client.patch(
+        "/admin/event-types/consultation",
+        json={"name": "x", "duration": "abc"},
+    )
+    assert response.status_code == 400
+    assert response.json() == {"error": "Invalid request"}
+
+
+def test_delete_event_type(client):
+    create_event_type(client)
+    response = client.delete("/admin/event-types/consultation")
+    assert response.status_code == 204
+
+    listed = client.get("/event-types")
+    assert listed.json() == []
+
+
+def test_delete_event_type_not_found(client):
+    response = client.delete("/admin/event-types/nope")
+    assert response.status_code == 404
+    assert response.json() == {"error": "Event type not found"}
+
+
+def test_delete_event_type_with_bookings_conflict(client):
+    create_event_type(client)
+    create_booking(client, time="13:00")
+    response = client.delete("/admin/event-types/consultation")
+    assert response.status_code == 409
+    assert response.json() == {"error": "Event type has bookings and cannot be deleted"}
+
+
 # ---------- Guest day slots ----------
 
 
