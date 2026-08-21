@@ -70,10 +70,10 @@ docker compose down
 
 Проект задеплоен на [Railway](https://railway.com) и доступен по публичной ссылке:
 
-**https://app-production-6006.up.railway.app**
+**https://ai-for-developers-project-387-production-79c6.up.railway.app**
 
 Приложение собирается из `Dockerfile` и слушает порт из переменной окружения `PORT`
-(на Railway задан `PORT=8000`, публичный домен пробрасывается на этот порт).
+(Railway задаёт её автоматически и пробрасывает на неё публичный домен).
 
 Автодеплой на релизах: `.github/workflows/release-please.yml` после создания
 релиза деплоит через Railway CLI (`railway up`), проверяет работоспособность
