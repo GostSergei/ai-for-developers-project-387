@@ -1,0 +1,40 @@
+name: opencode-fix
+
+on:
+  issue_comment:
+    types: [created]
+
+jobs:
+  opencode-fix:
+    if: |
+      (github.event.issue.pull_request == null) &&
+      (
+        contains(github.event.comment.body, ' /oc1') ||
+        startsWith(github.event.comment.body, '/oc1') ||
+        contains(github.event.comment.body, ' /opencode1') ||
+        startsWith(github.event.comment.body, '/opencode1')
+      )
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+      issues: write
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+        with:
+          persist-credentials: true
+
+      - name: Configure git identity
+        run: |
+          git config --local user.name "github-actions[bot]"
+          git config --local user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+      - name: Run opencode (fix)
+        uses: anomalyco/opencode/github@latest
+        env:
+          OPENCODE_API_KEY: ${{ secrets.OPENCODE_API_KEY }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          model: opencode/deepseek-v4-flash
+          use_github_token: true
