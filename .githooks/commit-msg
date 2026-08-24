@@ -1,0 +1,146 @@
+#!/bin/sh
+# commit-msg hook: приводит сообщение коммита к формату Conventional Commits.
+#
+# Нужен для коммитов, которые создаёт opencode-агент из воркфлоу `/oc` и
+# `/opencode`: модель может сгенерировать сообщение без корректного префикса
+# типа, из-за чего падает проверка commitlint. Хук определяет тип по фактическим
+# изменениям (git diff --cached) и перезаписывает файл сообщения до того, как
+# коммит будет создан, поэтому в историю попадает уже корректное имя.
+
+msg_file="$1"
+full="$(cat "$msg_file")"
+header="$(printf '%s\n' "$full" | sed -n '1p' | sed 's/[[:space:]]*$//')"
+
+TYPES="feat fix docs chore refactor test ci style perf build revert"
+
+is_type() {
+  for t in $TYPES; do
+    [ "$t" = "$1" ] && return 0
+  done
+  return 1
+}
+
+# Убирает конечные точки/пробелы из subject и обрезает header до 100 символов.
+finalize() {
+  t="$1"; b="$2"; s="$3"
+  while :; do
+    case "$s" in
+      *.) s="${s%.}";;
+      *) break;;
+    esac
+  done
+  s="$(printf '%s' "$s" | sed 's/[[:space:]]*$//')"
+  [ -n "$s" ] || s="обновление"
+  new_header="${t}${b}: ${s}"
+  new_header="$(printf '%s' "$new_header" | cut -c1-100)"
+
+  rest="$(printf '%s\n' "$full" | sed '1d')"
+  rest="$(printf '%s\n' "$rest" | sed '/^[[:space:]]*$/d')"
+  if [ -n "$rest" ]; then
+    printf '%s\n\n%s\n' "$new_header" "$rest" > "$msg_file"
+  else
+    printf '%s\n' "$new_header" > "$msg_file"
+  fi
+  exit 0
+}
+
+# --- 1. Заголовок уже корректный Conventional Commits? ---
+# Перед первым ": " извлекаем токен типа (type(scope)!).
+if printf '%s' "$header" | grep -q ': '; then
+  before="$(printf '%s' "$header" | sed 's/: .*//')"
+  t="$(printf '%s' "$before" | sed -n 's/^\([A-Za-z][A-Za-z0-9_-]*\).*/\1/p')"
+  if [ -n "$t" ] && is_type "$t" &&
+     printf '%s' "$header" | grep -qE "^(feat|fix|docs|chore|refactor|test|ci|style|perf|build|revert)(\([a-z0-9_.-]+\))?(!)?: [^ ]"; then
+    subject="${header#*: }"
+    case "$subject" in
+      *.|*" ") finalize "$t" "" "$subject" ;;
+      *) exit 0 ;;
+    esac
+  fi
+  subject="${header#*: }"
+else
+  subject="$header"
+fi
+
+# --- 2. Тип не корректен — определяем по фактическим изменениям ---
+md_only=1; ci_only=1; test_only=1; style_only=1; build_only=1
+has_main_tsp=0; new_files=0; renames=0; total_files=0
+
+while IFS= read -r line; do
+  [ -z "$line" ] && continue
+  total_files=$((total_files + 1))
+  st="${line%%[[:space:]]*}"
+  rest="${line#*[[:space:]]}"
+  rest="$(printf '%s' "$rest" | sed 's/[[:space:]]*$//')"
+
+  case "$st" in
+    R*)
+      renames=$((renames + 1))
+      path="$(printf '%s' "$rest" | sed -n 's/.*[[:space:]]->[[:space:]]//p')"
+      [ -z "$path" ] && path="$(printf '%s' "$rest" | awk -F'\t' '{print $2}')"
+      ;;
+    A*) new_files=$((new_files + 1)); path="$rest" ;;
+    *)  path="$rest" ;;
+  esac
+  [ -z "$path" ] && continue
+
+  case "$path" in
+    main.tsp)
+      has_main_tsp=1
+      md_only=0; ci_only=0; test_only=0; style_only=0; build_only=0
+      ;;
+    *.md)
+      ci_only=0; test_only=0; style_only=0; build_only=0
+      ;;
+    .github/workflows/*|Makefile|Dockerfile|.dockerignore|docker-compose*)
+      md_only=0; test_only=0; style_only=0; build_only=0
+      ;;
+    *.test.tsx|*.test.ts|*.spec.ts|*.spec.tsx|tests/*|*_test.py|test*.py)
+      md_only=0; ci_only=0; style_only=0; build_only=0
+      ;;
+    *.css|*.scss)
+      md_only=0; ci_only=0; test_only=0; build_only=0
+      ;;
+    package.json|package-lock.json|yarn.lock|pnpm-lock.yaml|requirements.txt|pyproject.toml|poetry.lock)
+      md_only=0; ci_only=0; test_only=0; style_only=0
+      ;;
+    *)
+      md_only=0; ci_only=0; test_only=0; style_only=0; build_only=0
+      ;;
+  esac
+done <<EOF
+$(git diff --cached --name-status)
+EOF
+
+if [ "$total_files" -gt 0 ] && [ "$md_only" = 1 ]; then
+  type=docs
+elif [ "$total_files" -gt 0 ] && [ "$ci_only" = 1 ]; then
+  type=ci
+elif [ "$total_files" -gt 0 ] && [ "$test_only" = 1 ]; then
+  type=test
+elif [ "$total_files" -gt 0 ] && [ "$style_only" = 1 ]; then
+  type=style
+elif [ "$total_files" -gt 0 ] && [ "$build_only" = 1 ]; then
+  type=build
+elif [ "$renames" = "$total_files" ] && [ "$total_files" -gt 0 ]; then
+  type=refactor
+elif [ "$has_main_tsp" = 1 ]; then
+  type=feat
+elif [ "$new_files" -gt 0 ]; then
+  type=feat
+else
+  case "$subject" in
+    *фикс*|*исправ*|*баг*|*bug*|*fix*|*ошибк*|*правк*) type=fix ;;
+    *) type=feat ;;
+  esac
+fi
+
+# Breaking changes — только для feat (feat!).
+bang=""
+if [ "$type" = "feat" ]; then
+  case "$header$subject" in
+    *breaking*|*BREAKING*|*лома*|*Лома*|*несовмест*|*миграц*|*'!'*) bang="!" ;;
+  esac
+fi
+
+finalize "$type" "$bang" "$subject"

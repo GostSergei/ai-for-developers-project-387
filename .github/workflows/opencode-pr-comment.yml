@@ -35,6 +35,11 @@ jobs:
           git config --local user.name "github-actions[bot]"
           git config --local user.email "41898282+github-actions[bot]@users.noreply.github.com"
 
+      - name: Install commit-msg hook (Conventional Commits)
+        run: |
+          git config core.hooksPath .githooks
+          chmod +x .githooks/commit-msg
+
       - name: Run opencode (pr comment)
         uses: anomalyco/opencode/github@latest
         env:
@@ -43,3 +48,9 @@ jobs:
         with:
           model: opencode/deepseek-v4-flash
           use_github_token: true
+          prompt: |
+            Перед коммитами соблюдай строгий формат Conventional Commits (на русском):
+            - Тип из списка: feat|fix|docs|chore|refactor|test|ci|style|perf|build|revert.
+            - Разбивай изменения на логичные коммиты, каждый — со своим типом по его содержимому.
+            - Для ломающих изменений в main.tsp (изменение/удаление эндпоинтов или полей) используй feat!.
+            - Заголовок ≤100 символов, без точки в конце. Строгий Conventional Commits обязателен.
