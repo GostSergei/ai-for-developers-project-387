@@ -63,6 +63,17 @@ class Store:
             self._save()
         return event_type
 
+    def update_event_type(self, event_type: EventType) -> EventType:
+        with self._lock:
+            self.event_types[event_type.id] = event_type
+            self._save()
+        return event_type
+
+    def delete_event_type(self, event_type_id: str) -> None:
+        with self._lock:
+            self.event_types.pop(event_type_id, None)
+            self._save()
+
     @property
     def next_booking_id(self) -> int:
         return self._next_booking_id

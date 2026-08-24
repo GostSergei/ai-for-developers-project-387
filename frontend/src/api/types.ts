@@ -2,6 +2,7 @@ import type { components } from './schema';
 
 export type EventType = components['schemas']['EventType'];
 export type EventTypeInput = components['schemas']['EventTypeInput'];
+export type EventTypeInputUpdate = components['schemas']['EventTypeInputUpdate'];
 export type Slot = components['schemas']['Slot'];
 export type SlotStatus = components['schemas']['SlotStatus'];
 export type AdminSlot = components['schemas']['AdminSlot'];
