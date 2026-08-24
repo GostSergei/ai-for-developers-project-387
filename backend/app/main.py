@@ -132,6 +132,18 @@ def create_app(
     def admin_create_event_type(body: EventTypeInput):
         return services.create_event_type(app.state.store, body)
 
+    @app.patch(
+        "/admin/event-types/{event_type_id}",
+        response_model=EventType,
+        response_model_exclude_none=True,
+    )
+    def admin_update_event_type(event_type_id: str, body: EventTypeInput):
+        return services.update_event_type(app.state.store, event_type_id, body)
+
+    @app.delete("/admin/event-types/{event_type_id}", status_code=204)
+    def admin_delete_event_type(event_type_id: str):
+        services.delete_event_type(app.state.store, event_type_id)
+
     @app.get(
         "/admin/{date}",
         response_model=AdminDaySlots,

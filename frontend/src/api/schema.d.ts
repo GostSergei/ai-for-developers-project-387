@@ -38,6 +38,24 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/admin/event-types/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** @description Удалить тип события. Удаление запрещено, если у типа есть брони (409). */
+        delete: operations["Admin_deleteEventType"];
+        options?: never;
+        head?: never;
+        /** @description Обновить тип события. id задаётся в пути и не изменяется. */
+        patch: operations["Admin_updateEventType"];
+        trace?: never;
+    };
     "/admin/{date}": {
         parameters: {
             query?: never;
@@ -431,6 +449,15 @@ export interface components {
             /** Format: int32 */
             duration: number;
         };
+        /** @description Тело запроса на создание типа события. */
+        EventTypeInputUpdate: {
+            /** @description Уникальный идентификатор, задаётся владельцем. */
+            id?: string;
+            name?: string;
+            description?: string;
+            /** Format: int32 */
+            duration?: number;
+        };
         NotFoundError: {
             error: string;
         };
@@ -519,6 +546,88 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ConflictError"];
+                };
+            };
+            /** @description Client error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ValidationError"];
+                };
+            };
+        };
+    };
+    Admin_deleteEventType: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Ответ 204 No Content: тип события удалён. */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description The server cannot find the requested resource. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NotFoundError"];
+                };
+            };
+            /** @description The request conflicts with the current state of the server. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ConflictError"];
+                };
+            };
+        };
+    };
+    Admin_updateEventType: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["EventTypeInputUpdate"];
+            };
+        };
+        responses: {
+            /** @description The request has succeeded. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EventType"];
+                };
+            };
+            /** @description The server cannot find the requested resource. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NotFoundError"];
                 };
             };
             /** @description Client error */
