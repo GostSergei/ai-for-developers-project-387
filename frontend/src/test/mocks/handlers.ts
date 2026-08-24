@@ -161,7 +161,7 @@ function validateBookingInput(body: Record<string, unknown>, dateKey: string) {
 
 type Resolver = Parameters<typeof http.get>[1];
 type HandlerDef = {
-  method: 'get' | 'post';
+  method: 'get' | 'post' | 'patch' | 'delete';
   path: string;
   resolver: Resolver;
 };
@@ -306,6 +306,58 @@ const defs: HandlerDef[] = [
       };
       getDb().eventTypes.push(eventType);
       return json(eventType, 201);
+    },
+  },
+  {
+    method: 'patch',
+    path: '/admin/event-types/:id',
+    resolver: async ({ params, request }) => {
+      const id = String(params.id);
+      const existing = getDb().eventTypes.find((item) => item.id === id);
+      if (!existing) {
+        return error(404, NOT_FOUND_EVENT_TYPE);
+      }
+      const body = (await request.json()) as Record<string, unknown>;
+      const errors: Array<{ field: string; message: string }> = [];
+      if (typeof body.name !== 'string' || body.name.trim() === '') {
+        errors.push({ field: 'name', message: 'Обязательное поле' });
+      } else if (body.name.length > 100) {
+        errors.push({ field: 'name', message: 'Не более 100 символов' });
+      }
+      const duration = Number(body.duration);
+      if (!Number.isInteger(duration) || duration <= 0 || duration % 30 !== 0) {
+        errors.push({ field: 'duration', message: 'Длительность должна быть кратна 30 минутам' });
+      }
+      if (typeof body.description === 'string' && body.description.length > 1000) {
+        errors.push({ field: 'description', message: 'Не более 1000 символов' });
+      }
+      if (errors.length > 0) {
+        return validation(errors);
+      }
+      const updated: EventType = {
+        ...existing,
+        name: String(body.name),
+        description: typeof body.description === 'string' ? body.description : undefined,
+        duration: Number(body.duration),
+      };
+      const index = getDb().eventTypes.findIndex((item) => item.id === id);
+      getDb().eventTypes[index] = updated;
+      return json(updated);
+    },
+  },
+  {
+    method: 'delete',
+    path: '/admin/event-types/:id',
+    resolver: ({ params }) => {
+      const id = String(params.id);
+      if (!getDb().eventTypes.some((item) => item.id === id)) {
+        return error(404, NOT_FOUND_EVENT_TYPE);
+      }
+      if (getDb().bookings.some((item) => item.eventTypeId === id)) {
+        return error(409, CONFLICT_DELETE_EVENT_TYPE);
+      }
+      getDb().eventTypes = getDb().eventTypes.filter((item) => item.id !== id);
+      return new HttpResponse(null, { status: 204 });
     },
   },
 ];

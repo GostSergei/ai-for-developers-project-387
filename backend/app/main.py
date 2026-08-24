@@ -5,7 +5,7 @@ from pathlib import Path
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import FileResponse, JSONResponse, Response
+from fastapi.responses import FileResponse, JSONResponse
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
 from app import services
@@ -143,7 +143,6 @@ def create_app(
     @app.delete("/admin/event-types/{event_type_id}", status_code=204)
     def admin_delete_event_type(event_type_id: str):
         services.delete_event_type(app.state.store, event_type_id)
-        return Response(status_code=204)
 
     @app.get(
         "/admin/{date}",
