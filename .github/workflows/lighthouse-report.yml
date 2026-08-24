@@ -23,16 +23,10 @@ jobs:
         with:
           persist-credentials: true
 
-      - name: Run Lighthouse CLI (JSON)
+      - name: Run Lighthouse CLI
         run: |
           npx lighthouse "${{ inputs.target_url || 'https://ai-for-developers-project-387-production-79c6.up.railway.app' }}" \
             --output=json --output-path=./lighthouse-report.json \
-            --chrome-flags="--headless" --quiet
-
-      - name: Run Lighthouse CLI (HTML)
-        run: |
-          npx lighthouse "${{ inputs.target_url || 'https://ai-for-developers-project-387-production-79c6.up.railway.app' }}" \
-            --output=html --output-path=./lighthouse-report.html \
             --chrome-flags="--headless" --quiet
 
       - name: Upload report artifact
@@ -41,7 +35,6 @@ jobs:
           name: lighthouse-report-${{ github.run_id }}
           path: |
             lighthouse-report.json
-            lighthouse-report.html
           retention-days: 30
 
       - name: Run opencode (анализ + обновление issue)
