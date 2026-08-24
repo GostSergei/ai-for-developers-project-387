@@ -10,6 +10,7 @@ export type AdminDaySlots = components['schemas']['AdminDaySlots'];
 export type Booking = components['schemas']['Booking'];
 export type BookingInfo = components['schemas']['BookingInfo'];
 export type BookingRequest = components['schemas']['BookingRequest'];
+export type BookingUpdate = components['schemas']['BookingUpdate'];
 export type BookingsList = components['schemas']['BookingsList'];
 export type DaySlots = components['schemas']['DaySlots'];
 export type AvailabilityRequest = components['schemas']['AvailabilityRequest'];

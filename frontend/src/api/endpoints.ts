@@ -5,6 +5,7 @@ import type {
   AvailabilityResponse,
   Booking,
   BookingRequest,
+  BookingUpdate,
   BookingsList,
   DaySlots,
   EventType,
@@ -28,6 +29,14 @@ export async function checkAvailability(date: string, body: AvailabilityRequest)
 
 export async function createBooking(date: string, body: BookingRequest): Promise<Booking> {
   return apiRequest<Booking>(`/guest/${date}/booking`, { method: 'POST', body });
+}
+
+export async function updateBooking(id: number, body: BookingUpdate): Promise<Booking> {
+  return apiRequest<Booking>(`/admin/bookings/${id}`, { method: 'PATCH', body });
+}
+
+export async function deleteBooking(id: number): Promise<void> {
+  return apiRequest<void>(`/admin/bookings/${id}`, { method: 'DELETE' });
 }
 
 export async function getAdminMeetings(): Promise<BookingsList> {
@@ -97,6 +106,26 @@ export function useCreateEventType() {
     mutationFn: createEventType,
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ['event-types'] });
+      void queryClient.invalidateQueries({ queryKey: ['admin-meetings'] });
+    },
+  });
+}
+
+export function useUpdateBooking() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, body }: { id: number; body: BookingUpdate }) => updateBooking(id, body),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ['admin-meetings'] });
+    },
+  });
+}
+
+export function useDeleteBooking() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (id: number) => deleteBooking(id),
+    onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ['admin-meetings'] });
     },
   });

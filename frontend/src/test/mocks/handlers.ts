@@ -2,6 +2,8 @@ import { http, HttpResponse, type HttpHandler } from 'msw';
 import type { AdminDaySlots, Booking, EventType, Slot } from '../../api/types';
 import {
   endsAt,
+  formatDateKey,
+  formatTime,
   gridStarts,
   isWithinBookingWindow,
   lastBookableStart,
@@ -16,6 +18,7 @@ const NOT_FOUND_DATE = 'Date is out of booking window';
 const CONFLICT_BOOKED = 'Slot is already booked';
 const CONFLICT_EVENT_TYPE = 'Event type with this id already exists';
 const CONFLICT_DELETE_EVENT_TYPE = 'Event type has bookings and cannot be deleted';
+const NOT_FOUND_BOOKING = 'Booking not found';
 
 function json<T>(body: T, status = 200) {
   return HttpResponse.json(body, { status });
@@ -357,6 +360,101 @@ const defs: HandlerDef[] = [
         return error(409, CONFLICT_DELETE_EVENT_TYPE);
       }
       getDb().eventTypes = getDb().eventTypes.filter((item) => item.id !== id);
+      return new HttpResponse(null, { status: 204 });
+    },
+  },
+  {
+    method: 'patch',
+    path: '/admin/bookings/:id',
+    resolver: async ({ params, request }) => {
+      const id = Number(params.id);
+      const db = getDb();
+      const booking = db.bookings.find((item) => item.id === id);
+      if (!booking) {
+        return error(404, NOT_FOUND_BOOKING);
+      }
+
+      const body = (await request.json()) as Record<string, unknown>;
+
+      const dateKey =
+        typeof body.date === 'string' ? body.date : formatDateKey(new Date(booking.startsAt));
+      const time = typeof body.time === 'string' ? body.time : formatTime(new Date(booking.startsAt));
+
+      let eventTypeId = booking.eventTypeId;
+      if (body.eventTypeId !== undefined) {
+        if (!db.eventTypes.some((item) => item.id === body.eventTypeId)) {
+          return error(404, NOT_FOUND_EVENT_TYPE);
+        }
+        eventTypeId = String(body.eventTypeId);
+      }
+      const eventType = db.eventTypes.find((item) => item.id === eventTypeId)!;
+
+      const guestName = typeof body.guestName === 'string' ? body.guestName : booking.guestName;
+      const guestContact =
+        typeof body.guestContact === 'string' ? body.guestContact : booking.guestContact;
+
+      const errors: Array<{ field: string; message: string }> = [];
+      if (!guestName.trim()) {
+        errors.push({ field: 'guestName', message: 'Обязательное поле' });
+      }
+      if (!guestContact.trim()) {
+        errors.push({ field: 'guestContact', message: 'Обязательное поле' });
+      }
+      if (!isWithinBookingWindow(dateKey)) {
+        errors.push({ field: 'date', message: 'Дата вне окна бронирования' });
+      }
+      if (!isOnGrid(time)) {
+        errors.push({ field: 'time', message: 'Время должно попадать на границу сетки 30 минут' });
+      }
+      if (errors.length > 0) {
+        return validation(errors);
+      }
+
+      const start = toDateTime(dateKey, time);
+      const end = endsAt(start, eventType.duration);
+
+      if (!isWithinWorkHours(dateKey, time, eventType.duration)) {
+        return validation([{ field: 'time', message: 'Встреча выходит за рабочие часы 08:00–20:00' }]);
+      }
+      if (start.getTime() <= Date.now()) {
+        return validation([{ field: 'time', message: 'Время уже наступило' }]);
+      }
+
+      const conflict = db.bookings.some((item) => {
+        if (item.id === id) return false;
+        const existingStart = new Date(item.startsAt);
+        const existingEnd = new Date(item.endsAt);
+        return existingStart < end && start < existingEnd;
+      });
+      if (conflict) {
+        return error(409, CONFLICT_BOOKED);
+      }
+
+      const updated: Booking = {
+        ...booking,
+        eventTypeId,
+        eventTypeName: eventType.name,
+        duration: eventType.duration,
+        guestName,
+        guestContact,
+        startsAt: toLocalIso(start),
+        endsAt: toLocalIso(end),
+      };
+      const index = db.bookings.findIndex((item) => item.id === id);
+      db.bookings[index] = updated;
+      return json(updated);
+    },
+  },
+  {
+    method: 'delete',
+    path: '/admin/bookings/:id',
+    resolver: ({ params }) => {
+      const id = Number(params.id);
+      const db = getDb();
+      if (!db.bookings.some((item) => item.id === id)) {
+        return error(404, NOT_FOUND_BOOKING);
+      }
+      db.bookings = db.bookings.filter((item) => item.id !== id);
       return new HttpResponse(null, { status: 204 });
     },
   },

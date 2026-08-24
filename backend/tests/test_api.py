@@ -554,6 +554,135 @@ def test_admin_upcoming_trailing_slash(client):
     assert len(response.json()["bookings"]) == 1
 
 
+def test_delete_booking(client):
+    create_event_type(client)
+    created = create_booking(client, time="13:00")
+    booking_id = created.json()["id"]
+
+    response = client.delete(f"/admin/bookings/{booking_id}")
+    assert response.status_code == 204
+
+    meetings = client.get("/admin").json()["bookings"]
+    assert meetings == []
+
+
+def test_delete_booking_not_found(client):
+    response = client.delete("/admin/bookings/999")
+    assert response.status_code == 404
+    assert response.json() == {"error": "Booking not found"}
+
+
+def test_update_booking_guest_info(client):
+    create_event_type(client)
+    created = create_booking(client, time="13:00")
+    booking_id = created.json()["id"]
+
+    response = client.patch(
+        f"/admin/bookings/{booking_id}",
+        json={"guestName": "Новый гость", "guestContact": "new@example.com"},
+    )
+    assert response.status_code == 200
+    body = response.json()
+    assert body["guestName"] == "Новый гость"
+    assert body["guestContact"] == "new@example.com"
+    assert body["startsAt"] == "2026-08-18T13:00:00"
+
+
+def test_update_booking_reschedule(client):
+    create_event_type(client)
+    created = create_booking(client, time="13:00")
+    booking_id = created.json()["id"]
+
+    response = client.patch(
+        f"/admin/bookings/{booking_id}",
+        json={"date": "2026-08-19", "time": "09:00"},
+    )
+    assert response.status_code == 200
+    body = response.json()
+    assert body["startsAt"] == "2026-08-19T09:00:00"
+    assert body["endsAt"] == "2026-08-19T09:30:00"
+
+
+def test_update_booking_change_type(client):
+    create_event_type(client)
+    create_event_type(client, event_type_id="meeting", duration=60, name="Встреча")
+    created = create_booking(client, time="13:00")
+    booking_id = created.json()["id"]
+
+    response = client.patch(
+        f"/admin/bookings/{booking_id}",
+        json={"eventTypeId": "meeting"},
+    )
+    assert response.status_code == 200
+    body = response.json()
+    assert body["eventTypeId"] == "meeting"
+    assert body["eventTypeName"] == "Встреча"
+    assert body["duration"] == 60
+    assert body["endsAt"] == "2026-08-18T14:00:00"
+
+
+def test_update_booking_not_found(client):
+    response = client.patch(
+        "/admin/bookings/999",
+        json={"guestName": "x", "guestContact": "y"},
+    )
+    assert response.status_code == 404
+    assert response.json() == {"error": "Booking not found"}
+
+
+def test_update_booking_conflict(client):
+    create_event_type(client)
+    create_booking(client, time="13:00")
+    second = create_booking(client, time="14:00")
+    second_id = second.json()["id"]
+
+    response = client.patch(
+        f"/admin/bookings/{second_id}",
+        json={"time": "13:00"},
+    )
+    assert response.status_code == 409
+    assert response.json() == {"error": "Slot is already booked"}
+
+
+def test_update_booking_noop_allowed(client):
+    create_event_type(client)
+    created = create_booking(client, time="13:00")
+    booking_id = created.json()["id"]
+
+    response = client.patch(
+        f"/admin/bookings/{booking_id}",
+        json={"time": "13:00"},
+    )
+    assert response.status_code == 200
+    assert response.json()["id"] == booking_id
+
+
+def test_update_booking_empty_guest(client):
+    create_event_type(client)
+    created = create_booking(client, time="13:00")
+    booking_id = created.json()["id"]
+
+    response = client.patch(
+        f"/admin/bookings/{booking_id}",
+        json={"guestName": ""},
+    )
+    assert response.status_code == 422
+    assert has_field(response.json()["errors"], "guestName")
+
+
+def test_update_booking_unknown_type(client):
+    create_event_type(client)
+    created = create_booking(client, time="13:00")
+    booking_id = created.json()["id"]
+
+    response = client.patch(
+        f"/admin/bookings/{booking_id}",
+        json={"eventTypeId": "nope"},
+    )
+    assert response.status_code == 404
+    assert response.json() == {"error": "Event type not found"}
+
+
 def test_admin_upcoming_filters_out_past_days(client):
     create_event_type(client)
     create_booking(client, time="14:00")

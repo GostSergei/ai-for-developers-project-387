@@ -11,6 +11,7 @@ from app.schemas import (
     Booking,
     BookingInfo,
     BookingRequest,
+    BookingUpdate,
     DaySlots,
     EventType,
     EventTypeInput,
@@ -48,6 +49,10 @@ def parse_time(value: str) -> time | None:
         return None
     hours, minutes = value.split(":")
     return time(int(hours), int(minutes))
+
+
+def format_time(dt: datetime) -> str:
+    return dt.strftime("%H:%M")
 
 
 def overlaps(existing: Booking, new_start: datetime, new_end: datetime) -> bool:
@@ -324,3 +329,93 @@ def get_meetings(store: Store, now: datetime) -> list[Booking]:
         (booking for booking in store.bookings if booking.startsAt >= start_of_today),
         key=lambda booking: booking.startsAt,
     )
+
+
+def get_booking(store: Store, booking_id: int) -> Booking:
+    booking = next((b for b in store.bookings if b.id == booking_id), None)
+    if booking is None:
+        raise HTTPException(404, {"error": "Booking not found"})
+    return booking
+
+
+def update_booking(store: Store, booking_id: int, data: BookingUpdate, now: datetime) -> Booking:
+    existing = get_booking(store, booking_id)
+
+    event_type = store.event_type(data.eventTypeId or existing.eventTypeId)
+    if event_type is None:
+        raise HTTPException(404, {"error": "Event type not found"})
+
+    if data.date is not None:
+        try:
+            d = date.fromisoformat(data.date)
+        except ValueError:
+            raise HTTPException(400, {"error": "Invalid request"})
+    else:
+        d = existing.startsAt.date()
+
+    time_str = data.time if data.time is not None else format_time(existing.startsAt)
+    guest_name = data.guestName if data.guestName is not None else existing.guestName
+    guest_contact = data.guestContact if data.guestContact is not None else existing.guestContact
+
+    errors = []
+    for field, value in (("guestName", guest_name), ("guestContact", guest_contact)):
+        if not value.strip():
+            errors.append(ValidationErrorItem(field=field, message="Field must not be empty"))
+    if errors:
+        raise HTTPException(422, {"errors": [e.model_dump() for e in errors]})
+
+    if not is_within_window(d, now):
+        raise HTTPException(
+            422, {"errors": [{"field": "date", "message": "Date is out of booking window"}]}
+        )
+
+    parsed = parse_time(time_str)
+    if parsed is None:
+        raise HTTPException(
+            422, {"errors": [{"field": "time", "message": "Time must be in HH:MM format"}]}
+        )
+    if parsed.minute % GRID_MINUTES != 0:
+        raise HTTPException(
+            422,
+            {"errors": [{"field": "time", "message": "Time must fall on a 30-minute grid boundary"}]},
+        )
+
+    starts_at = datetime.combine(d, parsed)
+    ends_at = starts_at + timedelta(minutes=event_type.duration)
+
+    if starts_at < datetime.combine(d, WORK_START) or ends_at > datetime.combine(d, WORK_END):
+        raise HTTPException(
+            422,
+            {
+                "errors": [
+                    {"field": "time", "message": "Meeting must fit within working hours 08:00-20:00"}
+                ]
+            },
+        )
+
+    if starts_at <= now:
+        raise HTTPException(
+            422, {"errors": [{"field": "time", "message": "Slot start time has already passed"}]}
+        )
+
+    for candidate in store.bookings:
+        if candidate.id != booking_id and overlaps(candidate, starts_at, ends_at):
+            raise HTTPException(409, {"error": "Slot is already booked"})
+
+    return store.update_booking(
+        Booking(
+            id=existing.id,
+            eventTypeId=event_type.id,
+            eventTypeName=event_type.name,
+            duration=event_type.duration,
+            guestName=guest_name.strip(),
+            guestContact=guest_contact.strip(),
+            startsAt=starts_at,
+            endsAt=ends_at,
+        )
+    )
+
+
+def delete_booking(store: Store, booking_id: int) -> None:
+    get_booking(store, booking_id)
+    store.delete_booking(booking_id)

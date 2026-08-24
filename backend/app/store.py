@@ -85,3 +85,17 @@ class Store:
             self.bookings.append(booking)
             self._save()
         return booking
+
+    def update_booking(self, booking: Booking) -> Booking:
+        with self._lock:
+            for index, existing in enumerate(self.bookings):
+                if existing.id == booking.id:
+                    self.bookings[index] = booking
+                    break
+            self._save()
+        return booking
+
+    def delete_booking(self, booking_id: int) -> None:
+        with self._lock:
+            self.bookings = [b for b in self.bookings if b.id != booking_id]
+            self._save()
