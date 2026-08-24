@@ -4,6 +4,7 @@ dist/
 .env
 .env.local
 *.log
+lighthouse-report.json
 .DS_Store
 .venv/
 __pycache__/
