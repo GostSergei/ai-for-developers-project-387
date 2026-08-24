@@ -1,5 +1,19 @@
 # Changelog
 
+## [1.1.0](https://github.com/GostSergei/ai-for-developers-project-387/compare/v1.0.1...v1.1.0) (2026-08-24)
+
+
+### Features
+
+* **admin:** кнопки управления типами событий ([b6ab72b](https://github.com/GostSergei/ai-for-developers-project-387/commit/b6ab72b73330e6db7fb8c809318610bc8ec68842))
+* **admin:** управление бронированиями (изменить/отменить встречу) ([b8096f5](https://github.com/GostSergei/ai-for-developers-project-387/commit/b8096f5e7b3e5e2ef9a07ffa455a248daf77c6dc))
+* управление бронированиями — изменить и отменить встречу ([467911c](https://github.com/GostSergei/ai-for-developers-project-387/commit/467911c19dd91d9806ca507d7dbbf0ffcaf85f35))
+
+
+### Bug Fixes
+
+* сделать Lighthouse-отчёт рабочим ([3beb6ee](https://github.com/GostSergei/ai-for-developers-project-387/commit/3beb6ee25995815a1c667173b6e0e2bf235fe25c))
+
 ## [1.0.1](https://github.com/GostSergei/ai-for-developers-project-387/compare/v1.0.0...v1.0.1) (2026-08-24)
 
 
