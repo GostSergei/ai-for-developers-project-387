@@ -34,7 +34,7 @@ export function isNotFoundError(error: unknown): boolean {
 }
 
 interface RequestOptions {
-  method?: 'GET' | 'POST';
+  method?: 'GET' | 'POST' | 'PATCH' | 'DELETE';
   query?: Record<string, string>;
   body?: unknown;
 }
@@ -68,6 +68,10 @@ export async function apiRequest<T>(path: string, options: RequestOptions = {}):
       payload = { error: 'Не удалось обработать ответ сервера' };
     }
     throw new ApiError(response.status, payload);
+  }
+
+  if (response.status === 204) {
+    return undefined as T;
   }
 
   return (await response.json()) as T;

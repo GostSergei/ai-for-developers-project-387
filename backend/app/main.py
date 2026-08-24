@@ -15,6 +15,7 @@ from app.schemas import (
     AvailabilityResponse,
     Booking,
     BookingRequest,
+    BookingUpdate,
     BookingsList,
     DaySlots,
     EventType,
@@ -143,6 +144,20 @@ def create_app(
     @app.delete("/admin/event-types/{event_type_id}", status_code=204)
     def admin_delete_event_type(event_type_id: str):
         services.delete_event_type(app.state.store, event_type_id)
+
+    @app.patch(
+        "/admin/bookings/{booking_id}",
+        response_model=Booking,
+        response_model_exclude_none=True,
+    )
+    def admin_update_booking(booking_id: int, body: BookingUpdate):
+        store = app.state.store
+        now = app.state.now_provider()
+        return services.update_booking(store, booking_id, body, now)
+
+    @app.delete("/admin/bookings/{booking_id}", status_code=204)
+    def admin_delete_booking(booking_id: int):
+        services.delete_booking(app.state.store, booking_id)
 
     @app.get(
         "/admin/{date}",

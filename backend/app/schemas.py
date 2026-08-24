@@ -95,6 +95,16 @@ class BookingRequest(BaseModel):
     guestContact: Optional[str] = None
 
 
+class BookingUpdate(BaseModel):
+    model_config = ConfigDict(strict=True)
+
+    date: Optional[str] = None
+    time: Optional[str] = None
+    eventTypeId: Optional[str] = None
+    guestName: Optional[str] = None
+    guestContact: Optional[str] = None
+
+
 class ValidationErrorItem(BaseModel):
     field: str
     message: str

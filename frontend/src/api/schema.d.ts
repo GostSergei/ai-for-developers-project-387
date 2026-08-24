@@ -21,6 +21,24 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/admin/bookings/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** @description Отменить бронирование. */
+        delete: operations["Admin_deleteBooking"];
+        options?: never;
+        head?: never;
+        /** @description Обновить бронирование: перенести время/тип или изменить данные гостя. */
+        patch: operations["Admin_updateBooking"];
+        trace?: never;
+    };
     "/admin/event-types": {
         parameters: {
             query?: never;
@@ -269,6 +287,20 @@ export interface components {
             guestName: string;
             guestContact: string;
         };
+        /** @description Обновление бронирования владельцем: перенос времени/типа или правка данных гостя. */
+        BookingUpdate: {
+            /**
+             * Format: date
+             * @description Новая дата, формат YYYY-MM-DD. Если не задана, сохраняется текущая дата брони.
+             */
+            date?: string;
+            /** @description Новое время начала, формат HH:MM. Если не задано, сохраняется текущее время. */
+            time?: string;
+            /** @description Новый тип события. Если не задан, сохраняется текущий тип. */
+            eventTypeId?: string;
+            guestName?: string;
+            guestContact?: string;
+        };
         /**
          * @description Список встреч: все брони начиная с начала сегодняшнего дня.
          * @example {
@@ -513,6 +545,97 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["BookingsList"];
+                };
+            };
+        };
+    };
+    Admin_deleteBooking: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Ответ 204 No Content: бронирование отменено. */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description The server cannot find the requested resource. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NotFoundError"];
+                };
+            };
+        };
+    };
+    Admin_updateBooking: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["BookingUpdate"];
+            };
+        };
+        responses: {
+            /** @description The request has succeeded. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Booking"];
+                };
+            };
+            /** @description The server could not understand the request due to invalid syntax. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BadRequestError"];
+                };
+            };
+            /** @description The server cannot find the requested resource. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NotFoundError"];
+                };
+            };
+            /** @description The request conflicts with the current state of the server. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ConflictError"];
+                };
+            };
+            /** @description Client error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ValidationError"];
                 };
             };
         };

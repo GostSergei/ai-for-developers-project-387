@@ -135,6 +135,21 @@ model BookingRequest {
   guestContact: string;
 }
 
+@doc("Обновление бронирования владельцем: перенос времени/типа или правка данных гостя.")
+model BookingUpdate {
+  @doc("Новая дата, формат YYYY-MM-DD. Если не задана, сохраняется текущая дата брони.")
+  date?: plainDate;
+
+  @doc("Новое время начала, формат HH:MM. Если не задано, сохраняется текущее время.")
+  time?: string;
+
+  @doc("Новый тип события. Если не задан, сохраняется текущий тип.")
+  eventTypeId?: string;
+
+  guestName?: string;
+  guestContact?: string;
+}
+
 // ---------- Errors ----------
 
 @error
@@ -180,6 +195,11 @@ model EventTypeCreated {
 
 @doc("Ответ 204 No Content: тип события удалён.")
 model EventTypeDeleted {
+  @statusCode status: 204;
+}
+
+@doc("Ответ 204 No Content: бронирование отменено.")
+model BookingDeleted {
   @statusCode status: 204;
 }
 
@@ -259,6 +279,21 @@ namespace Admin {
   @get
   @doc("Встречи: все брони всех типов, начиная с начала сегодняшнего дня, по возрастанию.")
   op meetings(): BookingsList;
+
+  @route("/admin/bookings/{id}")
+  @patch
+  @doc("Обновить бронирование: перенести время/тип или изменить данные гостя.")
+  op updateBooking(
+    @path id: int32,
+    @body body: BookingUpdate,
+  ): Booking | NotFoundError | ConflictError | ValidationError | BadRequestError;
+
+  @route("/admin/bookings/{id}")
+  @delete
+  @doc("Отменить бронирование.")
+  op deleteBooking(
+    @path id: int32,
+  ): BookingDeleted | NotFoundError;
 }
 
 // ---------- Examples (для Prism mock: реалистичная статичная выдача) ----------
