@@ -6,9 +6,10 @@ on:
 
 jobs:
   triage:
+    if: github.event.issue.user.type != 'Bot' && github.actor != 'github-actions[bot]'
     runs-on: ubuntu-latest
     permissions:
-      contents: read
+      contents: write
       issues: write
     steps:
       - name: Checkout repository
