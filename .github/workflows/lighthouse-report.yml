@@ -12,7 +12,7 @@ on:
 
 permissions:
   id-token: write
-  contents: read
+  contents: write
   issues: write
 
 jobs:
@@ -37,6 +37,11 @@ jobs:
             lighthouse-report.json
           retention-days: 30
 
+      - name: Configure git identity
+        run: |
+          git config --local user.name "github-actions[bot]"
+          git config --local user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
       - name: Run opencode (анализ + обновление issue)
         uses: anomalyco/opencode/github@latest
         env:
@@ -52,4 +57,4 @@ jobs:
             Если есть — обнови его body: свежие метрики, дата, сравнение с прошлым прогоном.
             Если нет — создай.
             В body держи чеклист правок с конкретными рекомендациями, ссылаясь на docs/dev-plan.md.
-            Ничего не коммить и не создавай других issues/PR.
+            Ничего не коммить, не пуши, не создавай веток и PR. Только обнови или создай указанный issue.

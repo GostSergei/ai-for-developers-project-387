@@ -9,12 +9,12 @@ https://ai-for-developers-project-387-production-79c6.up.railway.app
 
 | Метрика | Описание | База |
 |---|---|---|
-| LCP | Largest Contentful Paint, с | TBD |
-| CLS | Cumulative Layout Shift | TBD |
-| INP | Interaction to Next Paint, мс | TBD |
-| TBT | Total Blocking Time, мс | TBD |
+| LCP | Largest Contentful Paint, с | 2.3 |
+| CLS | Cumulative Layout Shift | 0 |
+| INP | Interaction to Next Paint, мс | 2300 |
+| TBT | Total Blocking Time, мс | 110 |
 
-Базу нужно заполнить значениями из первого реального прогона Lighthouse
-(артефакт `lighthouse-report-<run_id>` во вкладке Actions) — поле `audits.largest-contentful-paint.displayValue`,
-`audits.cumulative-layout-shift.displayValue`, `audits.interactive.displayValue`,
-`audits.total-blocking-time.displayValue`.
+Значения зафиксированы из первого реального прогона Lighthouse (артефакт
+`lighthouse-report-<run_id>` во вкладке Actions): поля
+`audits.largest-contentful-paint.displayValue`, `audits.cumulative-layout-shift.displayValue`,
+`audits.interactive.displayValue`, `audits.total-blocking-time.displayValue`.
