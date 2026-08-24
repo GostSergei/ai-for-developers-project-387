@@ -10,6 +10,7 @@ import type {
   DaySlots,
   EventType,
   EventTypeInput,
+  EventTypeInputUpdate,
 } from './types';
 import { apiRequest } from './client';
 
@@ -49,6 +50,14 @@ export async function getAdminDaySlots(date: string): Promise<AdminDaySlots> {
 
 export async function createEventType(body: EventTypeInput): Promise<EventType> {
   return apiRequest<EventType>('/admin/event-types', { method: 'POST', body });
+}
+
+export async function updateEventType(id: string, body: EventTypeInputUpdate): Promise<EventType> {
+  return apiRequest<EventType>(`/admin/event-types/${id}`, { method: 'PATCH', body });
+}
+
+export async function deleteEventType(id: string): Promise<void> {
+  return apiRequest<void>(`/admin/event-types/${id}`, { method: 'DELETE' });
 }
 
 // ---------- React Query hooks ----------
@@ -104,6 +113,28 @@ export function useCreateEventType() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: createEventType,
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ['event-types'] });
+      void queryClient.invalidateQueries({ queryKey: ['admin-meetings'] });
+    },
+  });
+}
+
+export function useUpdateEventType() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, body }: { id: string; body: EventTypeInputUpdate }) => updateEventType(id, body),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ['event-types'] });
+      void queryClient.invalidateQueries({ queryKey: ['admin-meetings'] });
+    },
+  });
+}
+
+export function useDeleteEventType() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) => deleteEventType(id),
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ['event-types'] });
       void queryClient.invalidateQueries({ queryKey: ['admin-meetings'] });
